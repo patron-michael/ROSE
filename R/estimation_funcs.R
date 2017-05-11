@@ -22,16 +22,22 @@ accuracy.meas <- function (response, predicted, threshold = 0.5)
 	positives <- splitted[[as.character(labels[2])]]
 	n.positives <- length(positives)
 
-	TP <- sum(positives >= threshold)
+	TN <- sum(positives >= threshold) # Should not be TP, changed to TN // SL
 	FP <- sum(negatives >= threshold)
-	TN <- sum(negatives < threshold)
+	TP <- sum(negatives < threshold) # Should not be TN, changed to TP // SL
 	FN <- sum(positives < threshold)
-
+	
+	ACCURACY <- (TP+TN) / (TP + TN + FP + FN) # Accuracy definition // SL
 	PRECISION <- TP/(TP+FP)
 	RECALL <- TP/(TP+FN)
 	F <- RECALL*PRECISION/(RECALL+PRECISION)
 
-	out <- list(Call=match.call(), threshold=threshold, precision= PRECISION, recall = RECALL, F=F)
+	out <- list(Call=match.call(), threshold=threshold,
+	            precision= PRECISION,
+	            recall = RECALL,
+	            accuracy = ACCURACY,
+	            F=F)
+	# Added Accuracy to out variable // SL
 	class(out) <- "accuracy.meas"
 	out
 }
@@ -47,6 +53,7 @@ print.accuracy.meas <- function(x, ...)
 	cat("\n")
 	cat( paste("precision: ", sprintf("%.3f",x$precision),"\n", sep="") )
 	cat( paste("recall: ", sprintf("%.3f",x$recall),"\n", sep="") )
+	cat( paste("accuracy: ", sprintf("%.3f",x$accuracy),"\n", sep="") )
 	cat( paste("F: ", sprintf("%.3f",x$F),"\n", sep="") )
 }
 
