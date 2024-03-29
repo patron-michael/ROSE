@@ -1,14 +1,14 @@
 #Last modified on 01/30/2014 
 ######################################################################
 .onAttach <- function(libname,pkgname){
-   packageStartupMessage("Loaded ROSE ", as.character(packageDescription("ROSE")[["Version"]]),"\n")
+  packageStartupMessage("Loaded ROSE ", as.character(packageDescription("ROSE")[["Version"]]),"\n")
 }
 ######################################################################
 
 ######################################################################
 #ovun.sample main function
 ######################################################################
-ovun.sample <- function(Formula = NULL, response = NULL, predictors = NULL, data, method = "both", N=NULL, p = 0.5, subset = options("subset")$subset, na.action = options("na.action")$na.action, seed) 
+ovun.sample <- function(Formula = NULL, response = NULL, predictors = NULL, data, method = "both", N, p = 0.5, subset = options("subset")$subset, na.action = options("na.action")$na.action, seed) 
 {
   
   if (!is.null(Formula) && (!is.null(response) || !is.null(predictors))) {
@@ -16,6 +16,7 @@ ovun.sample <- function(Formula = NULL, response = NULL, predictors = NULL, data
   }
   
   if (!is.null(Formula)) {
+    # Old format
     formula <- Formula
     
     method <- match.arg(method, choices = c("both", "over", "under"))
@@ -31,6 +32,7 @@ ovun.sample <- function(Formula = NULL, response = NULL, predictors = NULL, data
     class(out) <- "ovun.sample"
     return(out)
   } else if (!is.null(response) && !is.null(predictors)) {
+    # New format
     response_var <- response
     predictor_vars <- predictors
     
@@ -54,45 +56,45 @@ ovun.sample <- function(Formula = NULL, response = NULL, predictors = NULL, data
 ##print method for ovun.sample
 print.ovun.sample <- function(x, ...) 
 {
-	cat("\n")
-	cat("Call: \n")
-	print(x$Call)
-	Method <- switch(match.arg(x$method, choices=c("both", "under", "over")),
-							both="combination of over- and under-sampling",
-							under="undersampling",
-							over="oversampling"
-						 )
-	cat("\n")
-	cat("Data balanced by", Method,"\n")
-	cat("\n")
-	print(x$data)
+  cat("\n")
+  cat("Call: \n")
+  print(x$Call)
+  Method <- switch(match.arg(x$method, choices=c("both", "under", "over")),
+                   both="combination of over- and under-sampling",
+                   under="undersampling",
+                   over="oversampling"
+  )
+  cat("\n")
+  cat("Data balanced by", Method,"\n")
+  cat("\n")
+  print(x$data)
 }
 
 ###summary method for ovun.sample
 summary.ovun.sample <- function(object, ...) 
 {
-	out <- list( Call=object$Call, Summary=summary(object$data), method=object$method )
-	class(out) <- "summary.ovun.sample"
-	out
+  out <- list( Call=object$Call, Summary=summary(object$data), method=object$method )
+  class(out) <- "summary.ovun.sample"
+  out
 }
 
 ###print method for summary ovun.sample
 print.summary.ovun.sample <- function(x, ...) 
 {
-	cat("\n")
-	cat("Call: \n")
-	print(x$Call)
-	cat("\n")
-
-	Method <- switch(match.arg(x$method, choices=c("both", "under", "over")),
-							both="combination of over- and under-sampling",
-							under="undersampling",
-							over="oversampling"
-						 )
-
-	cat("Summary of data balanced by", Method ,"\n")
-	cat("\n")
-	print(x$Summary)
+  cat("\n")
+  cat("Call: \n")
+  print(x$Call)
+  cat("\n")
+  
+  Method <- switch(match.arg(x$method, choices=c("both", "under", "over")),
+                   both="combination of over- and under-sampling",
+                   under="undersampling",
+                   over="oversampling"
+  )
+  
+  cat("Summary of data balanced by", Method ,"\n")
+  cat("\n")
+  print(x$Summary)
 }
 
 ######################################################################
@@ -101,22 +103,22 @@ print.summary.ovun.sample <- function(x, ...)
 ##this function is NOT exported
 adj.formula <- function(formula, data)
 {
-	if( missing(data) )
-		frml.env <- environment(formula)
-	else
-		frml.env <- data
-
-	formula <- terms(formula, data = frml.env)
-	vars <- attr(formula, "variables")
-	vars <- sapply(vars, function(x) paste(deparse(x,width.cutoff=500), collapse=' '))[-1L]
-	#remove all characters before either ( or /
-	vars <- sub("*.*[(/]","", vars)
-	#remove all characters after either ^ or )
-	vars <- sub("['^')].*","", vars)
-	vars <- unique(vars)
-	formula <- as.formula(paste(vars[1], "~", paste(vars[-1], collapse= "+")))
-	attr(formula, "variables") <- vars
-	formula
+  if( missing(data) )
+    frml.env <- environment(formula)
+  else
+    frml.env <- data
+  
+  formula <- terms(formula, data = frml.env)
+  vars <- attr(formula, "variables")
+  vars <- sapply(vars, function(x) paste(deparse(x,width.cutoff=500), collapse=' '))[-1L]
+  #remove all characters before either ( or /
+  vars <- sub("*.*[(/]","", vars)
+  #remove all characters after either ^ or )
+  vars <- sub("['^')].*","", vars)
+  vars <- unique(vars)
+  formula <- as.formula(paste(vars[1], "~", paste(vars[-1], collapse= "+")))
+  attr(formula, "variables") <- vars
+  formula
 }
 
 
@@ -124,13 +126,11 @@ adj.formula <- function(formula, data)
 #This function is the wrapper for all the implemented data balancing remedies 
 ######################################################################
 ##this function is NOT exported
-omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL, data, method, subset, na.action, N=NULL, p = 0.5, seed, hmult.majo = 1, hmult.mino = 1) {
-
+omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL, data, method, subset, na.action, N, p = 0.5, seed, hmult.majo = 1, hmult.mino = 1) {
+  
   if (!is.null(Formula) && (!is.null(response) || !is.null(predictors))) {
     stop("Cannot provide both Formula and response/predictors simultaneously.\n")
   }
-  
-
   
   if (!is.null(response) && !is.null(predictors)) {
     # New format
@@ -139,11 +139,9 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     
     if (missing(method))
       method <- "both"
-
     
     if ((method == "under" || method == "over") && !missing(N) && !missing(p))
       stop("Too many arguments. Need to specify either N or p.\n")
-    
     
     # Perform the necessary checks and argument parsing
     response <- data[[response_var]]
@@ -158,44 +156,34 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     if (n < 2) 
       stop("Too few observations.\n")
     
-    if (length(T) < 2)
-      stop("The response variable must have at least two levels.\n")
+    if (length(T) > 2)
+      stop("The response variable must have 2 levels.\n")
+    else if (length(T) == 1)
+      stop("The response variable has only one class.\n")
     
     if (p < 0 || p > 1) 
       stop("p must be in the interval 0-1.\n")
     
-    levels_response <- levels(response)
+    majoY <- levels(response)[which.max(T)]
+    minoY <- levels(response)[which.min(T)]
     
-    ind_list <- lapply(levels_response, function(level) which(response == level))
-    sample_sizes <- sapply(ind_list, length)  
-    max_sample_size <- max(sample_sizes)
+    ind.mino <- which(response == minoY)
+    ind.majo <- which(response == majoY)
     
     if (!missing(seed)) 
       set.seed(seed)
     
-    data.obj_list <- lapply(seq_along(ind_list), function(i) {
-      data_subset <- data[ind_list[[i]], , drop = FALSE]
-      majoY <- levels_response[-i][which.max(sample_sizes[-i])]  # Excluding the current level
-      minoY <- levels_response[i]
-      ind.majo <- which(response == majoY)
-      ind.mino <- ind_list[[i]]
-      
-      switch(method,
-             both = ou.sampl(sample_sizes[i], N, p, ind.majo, majoY, ind.mino, minoY, classy, predictors),
-             over = over.sampl(sample_sizes[i], N, p, ind.majo, ind.mino, majoY, minoY, response, classy, predictors),
-             under = under.sampl(sample_sizes[i], N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors),
-             rose = rose.sampl(sample_sizes[i], N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors, classx, d, T, hmult.majo, hmult.mino)
-      )
-    })
+    # Handling the selected method
+    data.obj <- switch(method,
+                       both = ou.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, classy, predictors),
+                       over = over.sampl(n, N, p, ind.majo, ind.mino, majoY, minoY, response, classy, predictors),
+                       under = under.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors),
+                       rose = rose.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors, classx, d, T, hmult.majo, hmult.mino)
+    )
     
-    data.out_list <- lapply(data.obj_list, function(data.obj) data.obj$data.out)
-    ynew_list <- lapply(data.obj_list, function(data.obj) data.obj$ynew)
-    Xnew_list <- lapply(data.obj_list, function(data.obj) data.obj$Xnew)
-    
-    # Combine the results for all classes
-    data.out <- do.call(rbind, data.out_list)
-    ynew <- unlist(ynew_list)
-    Xnew <- do.call(rbind, Xnew_list)
+    data.out <- data.obj$data.out
+    ynew <- data.obj$ynew
+    Xnew <- data.obj$Xnew
     
     # Re-positioning columns if necessary
     if (!missing(data)) {
@@ -203,7 +191,7 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
       data.out <- cbind(ynew, Xnew)
     }
     
-    # TODO: adapt for having the true names
+    # TODO: adapt for have the truth names
     names(data.out) <- names(data)
     return(list(data = data.out, call = match.call()))
     
@@ -214,7 +202,7 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     
     if (missing(method))
       method <- "both"
-
+    
     if ((method == "under" || method == "over") && !missing(N) && !missing(p))
       stop("Too many arguments. Need to specify either N or p.\n")
     
@@ -241,7 +229,6 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     if (formula.orig[[3]] != "." && eval(formula) != formula.orig)
       warning("Transformations of variables are not allowed.\n New data have been generated by using non-transformed variables.\n ")
     
-    
     mf <- do.call(model.frame, lst.model.frame)
     cn <- rownames(attributes(attributes(mf)$terms)$factors)
     data.st <- data.frame(mf)
@@ -259,51 +246,33 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     if (n < 2) 
       stop("Too few observations.\n")
     
-    if (length(T) < 2)
-      stop("The response variable must have at least two levels.\n")
+    if (length(T) > 2)
+      stop("The response variable must have 2 levels.\n")
+    else if (length(T) == 1)
+      stop("The response variable has only one class.\n")
     
     if (p < 0 || p > 1) 
       stop("p must be in the interval 0-1.\n")
     
-    levels_response <- levels(y)
+    majoY <- levels(y)[which.max(T)]
+    minoY <- levels(y)[which.min(T)]
     
-    ind_list <- lapply(levels_response, function(level) which(y == level))
-    sample_sizes <- sapply(ind_list, length)
-    max_sample_size <- max(sample_sizes)
+    ind.mino <- which(y == minoY)
+    ind.majo <- which(y == majoY)
     
     if (!missing(seed)) 
       set.seed(seed)
     
-    # Handling the selected method for each class
-    data.obj_list <- lapply(seq_along(ind_list), function(i) {
-      data_subset <- data[ind_list[[i]], , drop = FALSE]
-      majoY <- levels_response[-i][which.max(sample_sizes[-i])]  # Excluding the current level
-      minoY <- levels_response[i]
-      print(response)
-      print(majoY)
-      ind.majo <- which(response == majoY)
-      ind.mino <- ind_list[[i]]
-      print("ko")
-      print(ind.majo)
-      switch(method,
-             both = ou.sampl(sample_sizes[i], N, p, ind.majo, majoY, ind.mino, minoY, classy, predictors),
-             over = over.sampl(sample_sizes[i], N, p, ind.majo, ind.mino, majoY, minoY, response, classy, predictors),
-             under = under.sampl(sample_sizes[i], N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors),
-             rose = rose.sampl(sample_sizes[i], N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors, classx, d, T, hmult.majo, hmult.mino)
-      )
-    })
-  
+    data.obj <- switch(method,
+                       both = ou.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, classy, X),
+                       over = over.sampl(n, N, p, ind.majo, ind.mino, majoY, minoY, y, classy, X),
+                       under = under.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, y, classy, X),
+                       rose = rose.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, y, classy, X, classx, d, T, hmult.majo, hmult.mino)
+    )
     
-    print("echo")
-    
-    data.out_list <- lapply(data.obj_list, function(data.obj) data.obj$data.out)
-    ynew_list <- lapply(data.obj_list, function(data.obj) data.obj$ynew)
-    Xnew_list <- lapply(data.obj_list, function(data.obj) data.obj$Xnew)
-    
-    # Combine the results for all classes
-    data.out <- do.call(rbind, data.out_list)
-    ynew <- unlist(ynew_list)
-    Xnew <- do.call(rbind, Xnew_list)
+    data.out <- data.obj$data.out
+    ynew <- data.obj$ynew
+    Xnew <- data.obj$Xnew
     
     # Re-positioning columns if necessary
     if (!missing(data) & flg.data != 0) {
@@ -329,8 +298,6 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     stop("Invalid arguments.")
   }
 }
-    
-
 
 
 ######################################################################
@@ -339,29 +306,29 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
 ##this function is NOT exported
 ou.sampl <- function(n, N, p, ind.majo, majoY, ind.mino, minoY, classy, X)
 {
-  print("koko")
-		if( is.null(N) )
-			N <- n
-	#number of new minority class examples
-	n.mino.new <- sum(rbinom(N, 1, p))
-	#number of new majority class examples
-	n.majo.new <- N-n.mino.new
-
-	id.majo.new <- sample(ind.majo, n.majo.new, replace=TRUE)
-	id.mino.new <- sample(ind.mino, n.mino.new, replace=TRUE)
-
-	#create X
-	Xnew <- data.frame(X[c(id.majo.new, id.mino.new),])
-	#create  y
-		if( classy%in%c("character", "integer", "numeric") )
-			ynew <- as.vector( c(rep(majoY, n.majo.new), rep(minoY, n.mino.new)), mode=classy )
-		if( classy=="factor" )  
-			ynew <- factor( c(rep(majoY, n.majo.new), rep(minoY, n.mino.new)), levels=c(majoY, minoY) )
-
-	data.out <- data.frame(ynew, Xnew)
-	rownames(data.out) <- 1:N
-
-	list(data.out=data.out, ynew=ynew, Xnew=Xnew)
+  
+  if( missing(N) )
+    N <- n
+  #number of new minority class examples
+  n.mino.new <- sum(rbinom(N, 1, p))
+  #number of new majority class examples
+  n.majo.new <- N-n.mino.new
+  
+  id.majo.new <- sample(ind.majo, n.majo.new, replace=TRUE)
+  id.mino.new <- sample(ind.mino, n.mino.new, replace=TRUE)
+  
+  #create X
+  Xnew <- data.frame(X[c(id.majo.new, id.mino.new),])
+  #create  y
+  if( classy%in%c("character", "integer", "numeric") )
+    ynew <- as.vector( c(rep(majoY, n.majo.new), rep(minoY, n.mino.new)), mode=classy )
+  if( classy=="factor" )  
+    ynew <- factor( c(rep(majoY, n.majo.new), rep(minoY, n.mino.new)), levels=c(majoY, minoY) )
+  
+  data.out <- data.frame(ynew, Xnew)
+  rownames(data.out) <- 1:N
+  
+  list(data.out=data.out, ynew=ynew, Xnew=Xnew)
 }
 
 ######################################################################
@@ -370,45 +337,45 @@ ou.sampl <- function(n, N, p, ind.majo, majoY, ind.mino, minoY, classy, X)
 ##this function is NOT exported
 under.sampl <- function(n, N, p, ind.majo, majoY, ind.mino, minoY, y, classy, X)
 {
-
-	n.mino.new <- sum(y == minoY)
-
-		if( is.null(N) )
-		{
-				# Determination of N and n.majo in version 0.0.2
-				if( p<n.mino.new/n ) 
-					warning("non-sensible to specify p smaller than the actual proportion of minority class examples in the original sample.\n")
-			#theoretical n.majo
-			n.majo <- round( (1-p)*n.mino.new/p )
-			#estimated n.majo
-			n.majo.new <- sum( rbinom(n.mino.new+n.majo, 1, 1-p) )
-			#final sample size
-			N <- n.majo.new + n.mino.new
-		}
-		else
-		{
-			if(N<n.mino.new)
-				stop("N must be greater or equal than the number of minority class examples.\n")
-			else
-				n.majo.new <- N-n.mino.new
-		}
-
-	id.mino.new <- ind.mino
-	id.majo.new <- sample(ind.majo, n.majo.new, replace=FALSE)
-
-	#create X
-	Xnew <- data.frame(X[c(id.majo.new, id.mino.new),])
-	#create  y
-		if( classy%in%c("character", "integer", "numeric") )
-			ynew <- as.vector( c(rep(majoY, n.majo.new), rep(minoY, n.mino.new)), mode=classy )
-		if( classy=="factor" )  
-			ynew <- factor( c(rep(majoY, n.majo.new), rep(minoY, n.mino.new)), levels=c(majoY, minoY) )
-
-	data.out <- data.frame(ynew, Xnew)
-	rownames(data.out) <- 1:N
-
-	list(data.out=data.out, ynew=ynew, Xnew=Xnew)
-
+  
+  n.mino.new <- sum(y == minoY)
+  
+  if( missing(N) )
+  {
+    # Determination of N and n.majo in version 0.0.2
+    if( p<n.mino.new/n ) 
+      warning("non-sensible to specify p smaller than the actual proportion of minority class examples in the original sample.\n")
+    #theoretical n.majo
+    n.majo <- round( (1-p)*n.mino.new/p )
+    #estimated n.majo
+    n.majo.new <- sum( rbinom(n.mino.new+n.majo, 1, 1-p) )
+    #final sample size
+    N <- n.majo.new + n.mino.new
+  }
+  else
+  {
+    if(N<n.mino.new)
+      stop("N must be greater or equal than the number of minority class examples.\n")
+    else
+      n.majo.new <- N-n.mino.new
+  }
+  
+  id.mino.new <- ind.mino
+  id.majo.new <- sample(ind.majo, n.majo.new, replace=FALSE)
+  
+  #create X
+  Xnew <- data.frame(X[c(id.majo.new, id.mino.new),])
+  #create  y
+  if( classy%in%c("character", "integer", "numeric") )
+    ynew <- as.vector( c(rep(majoY, n.majo.new), rep(minoY, n.mino.new)), mode=classy )
+  if( classy=="factor" )  
+    ynew <- factor( c(rep(majoY, n.majo.new), rep(minoY, n.mino.new)), levels=c(majoY, minoY) )
+  
+  data.out <- data.frame(ynew, Xnew)
+  rownames(data.out) <- 1:N
+  
+  list(data.out=data.out, ynew=ynew, Xnew=Xnew)
+  
 }
 
 ######################################################################
@@ -416,45 +383,45 @@ under.sampl <- function(n, N, p, ind.majo, majoY, ind.mino, minoY, y, classy, X)
 ######################################################################
 over.sampl <- function(n, N, p, ind.majo, ind.mino, majoY, minoY, y, classy, X)
 {
-
-	n.majo <- n.majo.new <- sum(y == majoY)
-	n.mino <- n-n.majo
-
-		if( is.null(N) )
-		{
-				if( p<n.mino/n ) 
-					warning("non-sensible to specify p smaller than the actual proportion of minority class examples in the original sample.\n")
-				#theoretical n.mino
-				n.mino <- round( p*n.majo/(1-p) )
-				#estimated n.mino
-				n.mino.new <- sum( rbinom(n.mino+n.majo, 1, p) )
-				#final sample size
-				N <- n.majo + n.mino.new
-		}
-		else
-		{
-				if(N<n)
-					stop("N must be greater or equal than the actual sample size.\n")
-				else
-					n.mino.new <- N-n.majo
-		}
-
-	id.majo.new <- ind.majo
-	id.mino.new <- sample(ind.mino, n.mino.new, replace=TRUE)
-
-	#create X
-	Xnew <- data.frame(X[c(id.majo.new, id.mino.new),])
-	#create  y
-		if( classy%in%c("character", "integer", "numeric") )
-			ynew <- as.vector( c(rep(majoY, n.majo.new), rep(minoY, n.mino.new)), mode=classy )
-		if( classy=="factor" )  
-			ynew <- factor( c(rep(majoY, n.majo.new), rep(minoY, n.mino.new)), levels=c(majoY, minoY) )
-
-	data.out <- data.frame(ynew, Xnew)
-	rownames(data.out) <- 1:N
-
-	list(data.out=data.out, ynew=ynew, Xnew=Xnew)
-
+  
+  n.majo <- n.majo.new <- sum(y == majoY)
+  n.mino <- n-n.majo
+  
+  if( missing(N) )
+  {
+    if( p<n.mino/n ) 
+      warning("non-sensible to specify p smaller than the actual proportion of minority class examples in the original sample.\n")
+    #theoretical n.mino
+    n.mino <- round( p*n.majo/(1-p) )
+    #estimated n.mino
+    n.mino.new <- sum( rbinom(n.mino+n.majo, 1, p) )
+    #final sample size
+    N <- n.majo + n.mino.new
+  }
+  else
+  {
+    if(N<n)
+      stop("N must be greater or equal than the actual sample size.\n")
+    else
+      n.mino.new <- N-n.majo
+  }
+  
+  id.majo.new <- ind.majo
+  id.mino.new <- sample(ind.mino, n.mino.new, replace=TRUE)
+  
+  #create X
+  Xnew <- data.frame(X[c(id.majo.new, id.mino.new),])
+  #create  y
+  if( classy%in%c("character", "integer", "numeric") )
+    ynew <- as.vector( c(rep(majoY, n.majo.new), rep(minoY, n.mino.new)), mode=classy )
+  if( classy=="factor" )  
+    ynew <- factor( c(rep(majoY, n.majo.new), rep(minoY, n.mino.new)), levels=c(majoY, minoY) )
+  
+  data.out <- data.frame(ynew, Xnew)
+  rownames(data.out) <- 1:N
+  
+  list(data.out=data.out, ynew=ynew, Xnew=Xnew)
+  
 }
 
 ######################################################################
@@ -462,49 +429,45 @@ over.sampl <- function(n, N, p, ind.majo, ind.mino, majoY, minoY, y, classy, X)
 ######################################################################
 rose.sampl <- function(n, N, p, ind.majo, majoY, ind.mino, minoY, y, classy, X, classx, d, T, hmult.majo, hmult.mino)
 {
-		# variables: must be numeric, integer or factor
-		if( any( is.na( pmatch(classx, c( "numeric","integer","factor"), duplicates.ok = TRUE ) ) ) ) 
-			stop("The current implementation of ROSE handles only continuous and categorical variables.\n")
-
-		if( any(T < 2) ) 
-			stop("ROSE needs at least two majority and two minority class examples.\n")
-
-		if( is.null(N) )
-			N <- n
-
-	#number of new minority class examples
-	n.mino.new <- sum(rbinom(N, 1, p))
-	#number of new majority class examples
-	n.majo.new <- N-n.mino.new
-
-	print("rose-1")
-	print(ind.majo)
-	print(n.majo.new)
-	id.majo.new <- sample(ind.majo, n.majo.new, replace=TRUE)
-	id.mino.new <- sample(ind.mino, n.mino.new, replace=TRUE)
-	print("rose+1")
-
-	id.num  <- which(classx=="numeric" | classx=="integer")
-	d.num   <- d-length( which(classx=="factor") )
-
-	#create  X
-	Xnew <- data.frame(X[c(id.majo.new, id.mino.new),])
-		if(d.num > 0)  
-		{
-			 Xnew[1:n.majo.new, id.num] <- rose.real(X[,id.num], hmult=hmult.majo, n=length(ind.majo), q=d.num, ids.class=ind.majo, ids.generation=id.majo.new)
-			 Xnew[(n.majo.new+1):N, id.num] <- rose.real(X[,id.num], hmult=hmult.mino, n=length(ind.mino), q=d.num, ids.class=ind.mino, ids.generation=id.mino.new)
-		}
-
-	#create  y
-		if( classy%in%c("character", "integer", "numeric") )
-			ynew <- as.vector( c(rep(majoY, n.majo.new), rep(minoY, n.mino.new)), mode=classy )
-		if( classy=="factor" )  
-			ynew <- factor( c(rep(majoY, n.majo.new), rep(minoY, n.mino.new)), levels=c(majoY, minoY) )
-
-	data.out <- data.frame(ynew, Xnew)
-	rownames(data.out) <- 1:N
-
-	list(data.out=data.out, ynew=ynew, Xnew=Xnew)
+  # variables: must be numeric, integer or factor
+  if( any( is.na( pmatch(classx, c( "numeric","integer","factor"), duplicates.ok = TRUE ) ) ) ) 
+    stop("The current implementation of ROSE handles only continuous and categorical variables.\n")
+  
+  if( any(T < 2) ) 
+    stop("ROSE needs at least two majority and two minority class examples.\n")
+  
+  if( missing(N) )
+    N <- n
+  #number of new minority class examples
+  n.mino.new <- sum(rbinom(N, 1, p))
+  #number of new majority class examples
+  n.majo.new <- N-n.mino.new
+  
+  id.majo.new <- sample(ind.majo, n.majo.new, replace=TRUE)
+  id.mino.new <- sample(ind.mino, n.mino.new, replace=TRUE)
+  
+  
+  id.num  <- which(classx=="numeric" | classx=="integer")
+  d.num   <- d-length( which(classx=="factor") )
+  
+  #create  X
+  Xnew <- data.frame(X[c(id.majo.new, id.mino.new),])
+  if(d.num > 0)  
+  {
+    Xnew[1:n.majo.new, id.num] <- rose.real(X[,id.num], hmult=hmult.majo, n=length(ind.majo), q=d.num, ids.class=ind.majo, ids.generation=id.majo.new)
+    Xnew[(n.majo.new+1):N, id.num] <- rose.real(X[,id.num], hmult=hmult.mino, n=length(ind.mino), q=d.num, ids.class=ind.mino, ids.generation=id.mino.new)
+  }
+  
+  #create  y
+  if( classy%in%c("character", "integer", "numeric") )
+    ynew <- as.vector( c(rep(majoY, n.majo.new), rep(minoY, n.mino.new)), mode=classy )
+  if( classy=="factor" )  
+    ynew <- factor( c(rep(majoY, n.majo.new), rep(minoY, n.mino.new)), levels=c(majoY, minoY) )
+  
+  data.out <- data.frame(ynew, Xnew)
+  rownames(data.out) <- 1:N
+  
+  list(data.out=data.out, ynew=ynew, Xnew=Xnew)
 }
 
 
@@ -514,25 +477,26 @@ rose.sampl <- function(n, N, p, ind.majo, majoY, ind.mino, minoY, y, classy, X, 
 ##This function is NOT exported
 rose.real <- function(X, hmult=1, n, q = NCOL(X), ids.class, ids.generation)
 {
-	X <- data.matrix(X)
-	n.new <- length(ids.generation)
-	cons.kernel <- (4/((q+2)*n))^(1/(q+4))
-
-		if(q!=1)
-			H <- hmult*cons.kernel*diag(apply(X[ids.class,], 2, sd), q)
-		else
-			H <- hmult*cons.kernel*sd(X[ids.class,])
-
-	Xnew.num <- matrix(rnorm(n.new*q), n.new, q)%*%H
-	Xnew.num <- data.matrix(Xnew.num + X[ids.generation,])
-	Xnew.num
+  X <- data.matrix(X)
+  n.new <- length(ids.generation)
+  cons.kernel <- (4/((q+2)*n))^(1/(q+4))
+  
+  if(q!=1)
+    H <- hmult*cons.kernel*diag(apply(X[ids.class,], 2, sd), q)
+  else
+    H <- hmult*cons.kernel*sd(X[ids.class,])
+  
+  Xnew.num <- matrix(rnorm(n.new*q), n.new, q)%*%H
+  Xnew.num <- data.matrix(Xnew.num + X[ids.generation,])
+  Xnew.num
 }
 
 ######################################################################
 #Wrapper for ROSE
 ######################################################################
-ROSE <- function(response_var = NULL, predictor_vars = NULL, data = NULL, Formula = NULL, N=NULL, p = 0.5, hmult.majo = 1, hmult.mino = 1, subset = options("subset")$subset, na.action = options("na.action")$na.action, seed) {
+ROSE <- function(response_var = NULL, predictor_vars = NULL, data = NULL, Formula = NULL, N, p = 0.5, hmult.majo = 1, hmult.mino = 1, subset = options("subset")$subset, na.action = options("na.action")$na.action, seed) {
   mc <- match.call()
+  
   if (!is.null(Formula)) {
     obj <- omnibus.balancing(Formula = Formula, data = data, subset = subset, na.action =  na.action, N =  N, p =  p, method = "rose", seed =  seed, hmult.majo =  hmult.majo, hmult.mino =  hmult.mino)
   } else if (!is.null(response_var) && !is.null(predictor_vars)) {
@@ -551,33 +515,32 @@ ROSE <- function(response_var = NULL, predictor_vars = NULL, data = NULL, Formul
 ##print method for ROSE
 print.ROSE <- function(x, ...) 
 {
-	cat("\n")
-	cat("Call: \n")
-	print(x$Call)
-	cat("\n")
-	cat("Data balanced by", x$method,"\n")
-	cat("\n")
-	print(x$data)
+  cat("\n")
+  cat("Call: \n")
+  print(x$Call)
+  cat("\n")
+  cat("Data balanced by", x$method,"\n")
+  cat("\n")
+  print(x$data)
 }
 
 ###summary method for ROSE
 summary.ROSE <- function(object, ...) 
 {
-	out <- list( Call=object$Call, Summary=summary(object$data) )
-	class(out) <- "summary.ROSE"
-	out
+  out <- list( Call=object$Call, Summary=summary(object$data) )
+  class(out) <- "summary.ROSE"
+  out
 }
 
 ###print method for summary ROSE
 print.summary.ROSE <- function(x, ...) 
 {
-	cat("\n")
-	cat("Call: \n")
-	print(x$Call)
-	cat("\n")
-
-	cat("Summary of data balanced by ROSE","\n")
-	cat("\n")
-	print(x$Summary)
+  cat("\n")
+  cat("Call: \n")
+  print(x$Call)
+  cat("\n")
+  
+  cat("Summary of data balanced by ROSE","\n")
+  cat("\n")
+  print(x$Summary)
 }
-
