@@ -1,18 +1,16 @@
 ```{r init, prompt=FALSE, echo=FALSE}
 # Install development branch
-#remotes::install_github("patron-michael/ROSE@dev")
+#remotes::install_github("patron-michael/ROSE@dev_merge")
 library(ROSE)
 data(hacide)
-#detach("package:ROSE", unload = TRUE)
 
-# source("estimation_funcs.R")
-# source("data_balancing_funcs.R")
-# source("ROSE_eval.R")
 library(knitr)
 library(rmarkdown)
 ```
 
-## Standart workflow
+## Initial implementation
+
+## Second implementation
 
 ```{r standart workflow, prompt=FALSE, echo=FALSE}
 # unbalance on training set
