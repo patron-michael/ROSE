@@ -8,13 +8,14 @@
 ######################################################################
 #ovun.sample main function
 ######################################################################
-ovun.sample <- function(Formula = NULL, response = NULL, predictors = NULL, data, method = "both", N, p = 0.5, subset = options("subset")$subset, na.action = options("na.action")$na.action, seed) {
+ovun.sample <- function(Formula = NULL, response = NULL, predictors = NULL, data, method = "both", N, p = 0.5, subset = options("subset")$subset, na.action = options("na.action")$na.action, seed) 
+{
   
   if (!is.null(Formula) && (!is.null(response) || !is.null(predictors))) {
     stop("Cannot provide both Formula and response/predictors simultaneously.\n")
   }
   
-  if (!is.null(Formula) {
+  if (!is.null(Formula)) {
     # Old format
     formula <- Formula
     
@@ -30,7 +31,7 @@ ovun.sample <- function(Formula = NULL, response = NULL, predictors = NULL, data
     out <- list(Call = match.call(), method = method, data = res$data)
     class(out) <- "ovun.sample"
     return(out)
-  } else if (!is.null(response) && !is.null(predictors) {
+  } else if (!is.null(response) && !is.null(predictors)) {
     # New format
     response_var <- response
     predictor_vars <- predictors
@@ -51,7 +52,6 @@ ovun.sample <- function(Formula = NULL, response = NULL, predictors = NULL, data
     stop("Invalid arguments.")
   }
 }
-
 
 ##print method for ovun.sample
 print.ovun.sample <- function(x, ...) 
