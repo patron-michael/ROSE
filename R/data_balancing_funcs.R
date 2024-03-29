@@ -498,11 +498,9 @@ ROSE <- function(response_var = NULL, predictor_vars = NULL, data = NULL, Formul
   mc <- match.call()
   
   if (!is.null(Formula)) {
-    # New format with formula
-    obj <- omnibus.balancing(Formula = Formula, data, subset, na.action, N, p, method = "rose", seed, hmult.majo, hmult.mino)
+    obj <- omnibus.balancing(Formula = Formula, data = data, subset = subset, na.action =  na.action, N =  N, p =  p, method =  method = "rose", seed =  seed, hmult.majo =  hmult.majo, hmult.mino =  hmult.mino)
   } else if (!is.null(response_var) && !is.null(predictor_vars)) {
-    # Old format with response and predictors
-    obj <- omnibus.balancing(response =  response_var,predictors =  predictor_vars, data, subset, na.action, N, p, method = "rose", seed, hmult.majo, hmult.mino)
+    obj <- omnibus.balancing(response =  response_var, predictors =  predictor_vars, data =  data, subset =  subset, na.action =  na.action, N =  N, p =  p,  method = method = "rose", seed = seed, hmult.majo = hmult.majo, hmult.mino = hmult.mino)
   } else {
     stop("Invalid arguments. Please provide either a Formula or response/predictor variables.")
   }
