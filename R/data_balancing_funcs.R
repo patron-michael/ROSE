@@ -163,7 +163,7 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     levels_response <- levels(response)
     
     ind_list <- lapply(levels_response, function(level) which(response == level))
-    sample_sizes <- sapply(ind_list, length)
+    sample_sizes <- sapply(ind_list, length)  # Extract sample sizes
     max_sample_size <- max(sample_sizes)
     
     if (!missing(seed)) 
@@ -173,10 +173,10 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     data.obj_list <- lapply(seq_along(ind_list), function(i) {
       data_subset <- data[ind_list[[i]], , drop = FALSE]
       switch(method,
-             both = ou.sampl(sample_sizes[[i]], N, p, NULL, NULL, NULL, NULL, classy, predictors),
-             over = over.sampl(sample_sizes[[i]], N, p, NULL, NULL, NULL, NULL, response[ind_list[[i]]], classy, predictors),
-             under = under.sampl(sample_sizes[[i]], N, p, NULL, NULL, NULL, NULL, response[ind_list[[i]]], classy, predictors),
-             rose = rose.sampl(sample_sizes[[i]], N, p, NULL, NULL, NULL, NULL, response[ind_list[[i]]], classy, predictors, classx, d, T, hmult.majo, hmult.mino)
+             both = ou.sampl(sample_sizes[i], N, p, NULL, NULL, NULL, NULL, classy, predictors),
+             over = over.sampl(sample_sizes[i], N, p, NULL, NULL, NULL, NULL, response[ind_list[[i]]], classy, predictors),
+             under = under.sampl(sample_sizes[i], N, p, NULL, NULL, NULL, NULL, response[ind_list[[i]]], classy, predictors),
+             rose = rose.sampl(sample_sizes[i], N, p, NULL, NULL, NULL, NULL, response[ind_list[[i]]], classy, predictors, classx, d, T, hmult.majo, hmult.mino)
       )
     })
     
@@ -259,7 +259,7 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     levels_response <- levels(y)
     
     ind_list <- lapply(levels_response, function(level) which(y == level))
-    sample_sizes <- lapply(ind_list, length)
+    sample_sizes <- sapply(ind_list, length)  # Extract sample sizes
     max_sample_size <- max(sample_sizes)
     
     if (!missing(seed)) 
@@ -269,46 +269,13 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     data.obj_list <- lapply(seq_along(ind_list), function(i) {
       data_subset <- data[ind_list[[i]], , drop = FALSE]
       switch(method,
-             both = ou.sampl(sample_sizes[[i]], N, p, NULL, NULL, NULL, NULL, classy, X),
-             over = over.sampl(sample_sizes[[i]], N, p, NULL, NULL, NULL, NULL, y[ind_list[[i]]], classy, X),
-             under = under.sampl(sample_sizes[[i]], N, p, NULL, NULL, NULL, NULL, y[ind_list[[i]]], classy, X),
-             rose = rose.sampl(sample_sizes[[i]], N, p, NULL, NULL, NULL, NULL, y[ind_list[[i]]], classy, X, classx, d, T, hmult.majo, hmult.mino)
+             both = ou.sampl(sample_sizes[i], N, p, NULL, NULL, NULL, NULL, classy, X),
+             over = over.sampl(sample_sizes[i], N, p, NULL, NULL, NULL, NULL, y[ind_list[[i]]], classy, X),
+             under = under.sampl(sample_sizes[i], N, p, NULL, NULL, NULL, NULL, y[ind_list[[i]]], classy, X),
+             rose = rose.sampl(sample_sizes[i], N, p, NULL, NULL, NULL, NULL, y[ind_list[[i]]], classy, X, classx, d, T, hmult.majo, hmult.mino)
       )
     })
     
-    data.out_list <- lapply(data.obj_list, function(data.obj) data.obj$data.out)
-    ynew_list <- lapply(data.obj_list, function(data.obj) data.obj$ynew)
-    Xnew_list <- lapply(data.obj_list, function(data.obj) data.obj$Xnew)
-    
-    # Combine the results for all classes
-    data.out <- do.call(rbind, data.out_list)
-    ynew <- unlist(ynew_list)
-    Xnew <- do.call(rbind, Xnew_list)
-    
-    # Re-positioning columns if necessary
-    if (!missing(data) & flg.data != 0) {
-      if (flg.data == 1)
-        colnames(data.out) <- colnames(data)[colnames(data) %in% cn]
-      else
-        colnames(data.out) <- attr(formula, "variables")[attr(formula, "variables") %in% cn] 
-      
-      indY <- colnames(data.out) == cn[1]
-      data.out[, indY] <- ynew
-      
-      swap.col <- order(pmatch(cn[-1], colnames(data.out)[!indY]))
-      data.out[, !indY] <- Xnew[, (1:d)[swap.col]]
-    } else {
-      if (length(cn) - 1 < d)
-        colnames(data.out) <- c(cn[1], colnames(X))
-      else
-        colnames(data.out) <- cn
-    }
-    
-    return(list(data = data.out, call = match.call()))
-  } else {
-    stop("Invalid arguments.")
-  }
-}
 
 
 
@@ -508,7 +475,6 @@ rose.real <- function(X, hmult=1, n, q = NCOL(X), ids.class, ids.generation)
 ######################################################################
 ROSE <- function(response_var = NULL, predictor_vars = NULL, data = NULL, Formula = NULL, N, p = 0.5, hmult.majo = 1, hmult.mino = 1, subset = options("subset")$subset, na.action = options("na.action")$na.action, seed) {
   mc <- match.call()
-  
   if (!is.null(Formula)) {
     obj <- omnibus.balancing(Formula = Formula, data = data, subset = subset, na.action =  na.action, N =  N, p =  p, method = "rose", seed =  seed, hmult.majo =  hmult.majo, hmult.mino =  hmult.mino)
   } else if (!is.null(response_var) && !is.null(predictor_vars)) {
