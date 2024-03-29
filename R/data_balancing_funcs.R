@@ -8,31 +8,32 @@
 ######################################################################
 #ovun.sample main function
 ######################################################################
-ovun.sample <- function(..., method = "both", N, p = 0.5, subset = options("subset")$subset, na.action = options("na.action")$na.action, seed) {
-  args <- list(...)
+ovun.sample <- function(Formula = NULL, response = NULL, predictors = NULL, data, method = "both", N, p = 0.5, subset = options("subset")$subset, na.action = options("na.action")$na.action, seed) {
   
-  if ("formula" %in% names(args) && "data" %in% names(args)) {
+  if (!is.null(Formula) && (!is.null(response) || !is.null(predictors))) {
+    stop("Cannot provide both Formula and response/predictors simultaneously.\n")
+  }
+  
+  if (!is.null(Formula) {
     # Old format
-    formula <- args$formula
-    data <- args$data
+    formula <- Formula
     
     method <- match.arg(method, choices = c("both", "over", "under"))
     if (!method %in% c("both", "over", "under")) 
       stop("Method must be 'both', 'over', or 'under'.\n")
     
     Call <- match.call()
-    m <- match(c("formula", "data", "method", "N", "p", "seed", "subset", "na.action"), names(Call), 0L)
+    m <- match(c("Formula", "data", "method", "N", "p", "seed", "subset", "na.action"), names(Call), 0L)
     Call1 <- Call[c(1L, m)]
     Call1[[1L]] <- omnibus.balancing
     res <- eval(Call1)
     out <- list(Call = match.call(), method = method, data = res$data)
     class(out) <- "ovun.sample"
     return(out)
-  } else if ("response_var" %in% names(args) && "predictor_vars" %in% names(args)) {
+  } else if (!is.null(response) && !is.null(predictors) {
     # New format
-    response_var <- args$response_var
-    predictor_vars <- args$predictor_vars
-    data <- args$data
+    response_var <- response
+    predictor_vars <- predictors
     
     method <- match.arg(method, choices = c("both", "over", "under"))
     if (!method %in% c("both", "over", "under")) 
@@ -50,6 +51,7 @@ ovun.sample <- function(..., method = "both", N, p = 0.5, subset = options("subs
     stop("Invalid arguments.")
   }
 }
+
 
 ##print method for ovun.sample
 print.ovun.sample <- function(x, ...) 
