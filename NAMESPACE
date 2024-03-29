@@ -4,7 +4,7 @@ export(
 			"roc.curve",
 			"ROSE.eval",
 			"ROSE",
-			"ovun.sample",
+			"new.ovun.sample",
 			"accuracy.meas"
 		)
 
@@ -14,9 +14,9 @@ S3method(print, accuracy.meas)
 S3method(print, roc.curve)
 S3method(summary, roc.curve)
 S3method(print, summary.roc.curve)
-S3method(print, ovun.sample)
-S3method(summary, ovun.sample)
-S3method(print, summary.ovun.sample)
+S3method(print, new.ovun.sample)
+S3method(summary, new.ovun.sample)
+S3method(print, summary.new.ovun.sample)
 S3method(print, ROSE)
 S3method(summary, ROSE)
 S3method(print, summary.ROSE)
