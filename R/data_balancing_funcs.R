@@ -145,6 +145,8 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     
     # Perform the necessary checks and argument parsing
     response <- data[[response_var]]
+    tmp_levels <- response
+    
     predictors <- data[, predictor_vars, drop = FALSE]
     n <- length(response)
     d <- NCOL(predictors)
@@ -156,30 +158,50 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     if (n < 2) 
       stop("Too few observations.\n")
     
-    if (length(T) > 2)
-      stop("The response variable must have 2 levels.\n")
-    else if (length(T) == 1)
+
+    if (length(T) == 1)
       stop("The response variable has only one class.\n")
     
     if (p < 0 || p > 1) 
       stop("p must be in the interval 0-1.\n")
     
-    majoY <- levels(response)[which.max(T)]
-    minoY <- levels(response)[which.min(T)]
-    
-    ind.mino <- which(response == minoY)
-    ind.majo <- which(response == majoY)
-    
-    if (!missing(seed)) 
-      set.seed(seed)
-    
-    # Handling the selected method
-    data.obj <- switch(method,
-                       both = ou.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, classy, predictors),
-                       over = over.sampl(n, N, p, ind.majo, ind.mino, majoY, minoY, response, classy, predictors),
-                       under = under.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors),
-                       rose = rose.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors, classx, d, T, hmult.majo, hmult.mino)
-    )
+    if (length(T) > 2)
+      nb_compare <- length(T) -1
+    while (nb_compare != 0) {
+      majoY <- levels(response)[which.max(T)]
+      minoY <- levels(response)[which.min(T)]
+      
+      ind.mino <- which(response == minoY)
+      ind.majo <- which(response == majoY)
+      
+      if (!missing(seed)) 
+        set.seed(seed)
+      
+      # Handling the selected method
+      data.obj <- switch(method,
+                         both = ou.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, classy, predictors),
+                         over = over.sampl(n, N, p, ind.majo, ind.mino, majoY, minoY, response, classy, predictors),
+                         under = under.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors),
+                         rose = rose.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors, classx, d, T, hmult.majo, hmult.mino)
+      )
+      
+      
+      ## TODO update data
+      
+      T2 <- table(data.obj$data.out$ynew)
+      higher <- levels(data.obj$data.out$ynew)[which.max(T2)]
+      lower <- levels(data.obj$data.out$ynew)[which.min(T2)]
+ 
+      T[higher] <- T2[higher]
+      T[lower] <- T2[lower]
+      
+      ind_lower <- which(response == lower)
+      ind_higher <- which(response == higher)
+      
+      predictors <- data.obj$data.out[, !(names(data.obj$data.out) %in% c("ynew"))]
+
+      nb_compare = nb_compare -1
+    }
     
     data.out <- data.obj$data.out
     ynew <- data.obj$ynew
@@ -192,6 +214,11 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     }
     
     # TODO: adapt for have the truth names
+    print(data.out$ynew)
+    print(tmp_levels)
+    
+    data.out$ynew <- tmp_levels
+    print(data.out)
     names(data.out) <- names(data)
     return(list(data = data.out, call = match.call()))
     
@@ -246,30 +273,35 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     if (n < 2) 
       stop("Too few observations.\n")
     
-    if (length(T) > 2)
-      stop("The response variable must have 2 levels.\n")
+    
     else if (length(T) == 1)
       stop("The response variable has only one class.\n")
     
     if (p < 0 || p > 1) 
       stop("p must be in the interval 0-1.\n")
     
-    majoY <- levels(y)[which.max(T)]
-    minoY <- levels(y)[which.min(T)]
-    
-    ind.mino <- which(y == minoY)
-    ind.majo <- which(y == majoY)
-    
-    if (!missing(seed)) 
-      set.seed(seed)
-    
-    data.obj <- switch(method,
-                       both = ou.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, classy, X),
-                       over = over.sampl(n, N, p, ind.majo, ind.mino, majoY, minoY, y, classy, X),
-                       under = under.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, y, classy, X),
-                       rose = rose.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, y, classy, X, classx, d, T, hmult.majo, hmult.mino)
-    )
-    
+    if (length(T) > 2)
+      nb_compare <- length(T) -1
+    while (nb_compare != 0) {
+      
+      majoY <- levels(y)[which.max(T)]
+      minoY <- levels(y)[which.min(T)]
+      
+      ind.mino <- which(y == minoY)
+      ind.majo <- which(y == majoY)
+      
+      if (!missing(seed)) 
+        set.seed(seed)
+      
+      data.obj <- switch(method,
+                         both = ou.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, classy, X),
+                         over = over.sampl(n, N, p, ind.majo, ind.mino, majoY, minoY, y, classy, X),
+                         under = under.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, y, classy, X),
+                         rose = rose.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, y, classy, X, classx, d, T, hmult.majo, hmult.mino)
+      )
+      print(data.obj$cls)
+      nb_compare = nb_compare -1
+    }
     data.out <- data.obj$data.out
     ynew <- data.obj$ynew
     Xnew <- data.obj$Xnew
