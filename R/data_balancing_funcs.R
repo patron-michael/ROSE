@@ -156,16 +156,15 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     if (n < 2) 
       stop("Too few observations.\n")
     
-    if (length(T) > 2)
-      stop("The response variable must have 2 levels.\n")
-    else if (length(T) == 1)
-      stop("The response variable has only one class.\n")
+    if (length(T) < 2)
+      stop("The response variable must have at least two levels.\n")
     
     if (p < 0 || p > 1) 
       stop("p must be in the interval 0-1.\n")
     
-    majoY <- levels(response)[which.max(T)]
-    minoY <- levels(response)[which.min(T)]
+    levels_response <- levels(response)
+    majoY <- levels_response[which.max(T)]
+    minoY <- levels_response[which.min(T)]
     
     ind.mino <- which(response == minoY)
     ind.majo <- which(response == majoY)
@@ -191,7 +190,7 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
       data.out <- cbind(ynew, Xnew)
     }
     
-    # TODO: adapt for have the truth names
+    # TODO: adapt for having the true names
     names(data.out) <- names(data)
     return(list(data = data.out, call = match.call()))
     
@@ -246,16 +245,15 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     if (n < 2) 
       stop("Too few observations.\n")
     
-    if (length(T) > 2)
-      stop("The response variable must have 2 levels.\n")
-    else if (length(T) == 1)
-      stop("The response variable has only one class.\n")
+    if (length(T) < 2)
+      stop("The response variable must have at least two levels.\n")
     
     if (p < 0 || p > 1) 
       stop("p must be in the interval 0-1.\n")
     
-    majoY <- levels(y)[which.max(T)]
-    minoY <- levels(y)[which.min(T)]
+    levels_response <- levels(y)
+    majoY <- levels_response[which.max(T)]
+    minoY <- levels_response[which.min(T)]
     
     ind.mino <- which(y == minoY)
     ind.majo <- which(y == majoY)
