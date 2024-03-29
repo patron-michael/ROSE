@@ -492,14 +492,24 @@ rose.real <- function(X, hmult=1, n, q = NCOL(X), ids.class, ids.generation)
 ######################################################################
 #Wrapper for ROSE
 ######################################################################
-ROSE <- function(response_var, predictor_vars, data, N, p=0.5, hmult.majo=1, hmult.mino=1, subset=options("subset")$subset, na.action=options("na.action")$na.action, seed)
-{
+ROSE <- function(response_var = NULL, predictor_vars = NULL, data = NULL, formula = NULL, N, p = 0.5, hmult.majo = 1, hmult.mino = 1, subset = options("subset")$subset, na.action = options("na.action")$na.action, seed) {
   mc <- match.call()
-  obj <- omnibus.balancing(response_var, predictor_vars, data, subset, na.action, N, p, method="rose", seed, hmult.majo, hmult.mino)
-  # out <- list(Call=mc, method="ROSE", data=obj$data)
-  # class(out) <- "ROSE"
-  # out
+  
+  if (!is.null(formula)) {
+    # New format with formula
+    obj <- omnibus.balancing(formula, data, subset, na.action, N, p, method = "rose", seed, hmult.majo, hmult.mino)
+  } else if (!is.null(response_var) && !is.null(predictor_vars)) {
+    # Old format with response and predictors
+    obj <- omnibus.balancing(response_var, predictor_vars, data, subset, na.action, N, p, method = "rose", seed, hmult.majo, hmult.mino)
+  } else {
+    stop("Invalid arguments. Please provide either a formula or response/predictor variables.")
+  }
+  
+  out <- list(Call = mc, method = "ROSE", data = obj$data)
+  class(out) <- "ROSE"
+  out
 }
+
 
 
 ##print method for ROSE
