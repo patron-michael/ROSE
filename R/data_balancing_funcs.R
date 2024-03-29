@@ -41,7 +41,7 @@ ovun.sample <- function(Formula = NULL, response = NULL, predictors = NULL, data
       stop("Method must be 'both', 'over', or 'under'.\n")
     
     Call <- match.call()
-    m <- match(c("response_var", "predictor_vars", "data", "method", "N", "p", "seed", "subset", "na.action"), names(Call), 0L)
+    m <- match(c("response", "predictors", "data", "method", "N", "p", "seed", "subset", "na.action"), names(Call), 0L)
     Call1 <- Call[c(1L, m)]
     Call1[[1L]] <- omnibus.balancing
     res <- eval(Call1)
