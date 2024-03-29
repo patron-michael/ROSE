@@ -6,34 +6,53 @@
 ######################################################################
 
 ######################################################################
-#new.ovun.sample main function
+#ovun.sample main function
 ######################################################################
-new.ovun.sample <- function(response_var, predictor_vars, data, method="both", N, p=0.5, subset=options("subset")$subset, na.action=options("na.action")$na.action, seed)
-{
-
-	###checks
-		if(is.null(predictor_vars)) 
-			stop("predictors are reaquired.\n")
+ovun.sample <- function(..., method = "both", N, p = 0.5, subset = options("subset")$subset, na.action = options("na.action")$na.action, seed) {
+  args <- list(...)
   
-    if(is.null(response_var)) 
-      stop("variables are reaquired.\n")
-
-	method <- match.arg(method, choices=c("both", "under", "over"))
-		if( !method%in%c("both", "over", "under") ) 
-			stop("Method must be 'both', 'over', or 'under'.\n")
-	###
-	Call <- match.call()
-	m <- match(c("response_var", "predictor_vars", "data","method","N", "p", "seed", "subset", "na.action"), names(Call), 0L)
-	Call1 <- Call[c(1L, m)]
-	Call1[[1L]] <- new.omnibus.balancing
-	res <- eval(Call1)
-	out <- list(Call=match.call(), method=method, data=res$data)
-	class(out) <- "new.ovun.sample"
-	out
+  if ("formula" %in% names(args) && "data" %in% names(args)) {
+    # Old format
+    formula <- args$formula
+    data <- args$data
+    
+    method <- match.arg(method, choices = c("both", "over", "under"))
+    if (!method %in% c("both", "over", "under")) 
+      stop("Method must be 'both', 'over', or 'under'.\n")
+    
+    Call <- match.call()
+    m <- match(c("formula", "data", "method", "N", "p", "seed", "subset", "na.action"), names(Call), 0L)
+    Call1 <- Call[c(1L, m)]
+    Call1[[1L]] <- omnibus.balancing
+    res <- eval(Call1)
+    out <- list(Call = match.call(), method = method, data = res$data)
+    class(out) <- "ovun.sample"
+    return(out)
+  } else if ("response_var" %in% names(args) && "predictor_vars" %in% names(args)) {
+    # New format
+    response_var <- args$response_var
+    predictor_vars <- args$predictor_vars
+    data <- args$data
+    
+    method <- match.arg(method, choices = c("both", "over", "under"))
+    if (!method %in% c("both", "over", "under")) 
+      stop("Method must be 'both', 'over', or 'under'.\n")
+    
+    Call <- match.call()
+    m <- match(c("response_var", "predictor_vars", "data", "method", "N", "p", "seed", "subset", "na.action"), names(Call), 0L)
+    Call1 <- Call[c(1L, m)]
+    Call1[[1L]] <- new.omnibus.balancing
+    res <- eval(Call1)
+    out <- list(Call = match.call(), method = method, data = res$data)
+    class(out) <- "ovun.sample"
+    return(out)
+  } else {
+    stop("Invalid arguments.")
+  }
 }
 
-##print method for new.ovun.sample
-print.new.ovun.sample <- function(x, ...) 
+##print method for ovun.sample
+print.ovun.sample <- function(x, ...) 
 {
 	cat("\n")
 	cat("Call: \n")
@@ -49,16 +68,16 @@ print.new.ovun.sample <- function(x, ...)
 	print(x$data)
 }
 
-###summary method for new.ovun.sample
-summary.new.ovun.sample <- function(object, ...) 
+###summary method for ovun.sample
+summary.ovun.sample <- function(object, ...) 
 {
 	out <- list( Call=object$Call, Summary=summary(object$data), method=object$method )
-	class(out) <- "summary.new.ovun.sample"
+	class(out) <- "summary.ovun.sample"
 	out
 }
 
-###print method for summary new.ovun.sample
-print.summary.new.ovun.sample <- function(x, ...) 
+###print method for summary ovun.sample
+print.summary.ovun.sample <- function(x, ...) 
 {
 	cat("\n")
 	cat("Call: \n")
@@ -105,82 +124,177 @@ adj.formula <- function(formula, data)
 #This function is the wrapper for all the implemented data balancing remedies 
 ######################################################################
 ##this function is NOT exported
-new.omnibus.balancing <- function(response_var, predictor_vars, data, method, subset, na.action, N, p=0.5, seed, hmult.majo=1, hmult.mino=1)
-{
-
-  ### Checks and argument parsing
-  if(is.null(predictor_vars)) 
-    stop("Predictor variables are required.\n")
-  if(is.null(response_var)) 
-    stop("Response variable is required.\n")
-  if(missing(method))
-    method <- "both"
-  if((method == "under" || method == "over") && !missing(N) && !missing(p))
-    stop("Too many arguments. Need to specify either N or p.\n")
+omnibus.balancing <- function(..., method, subset, na.action, N, p = 0.5, seed, hmult.majo = 1, hmult.mino = 1) {
+  args <- list(...)
   
-  # response_var <- as.character(substitute(response_var))
-  # predictor_vars <- as.character(substitute(predictor_vars))
-  
-  response <- data[[response_var]]
-  predictors <- data[, predictor_vars, drop = FALSE]
-  
-  # Handle missing arguments
-  if(missing(subset))
-    subset <- options("subset")$subset
-  if(missing(na.action))
-    na_action <- options("na.action")$na.action
-  
-  # Extracting necessary variables and performing necessary checks
-  n <- length(response)
-  d <- NCOL(predictors)
-  
-  classy <- class(response)
-  response <- factor(response)
-  T <- table(response)
-  classx <- sapply(as.data.frame(predictors), class)
-  
-  if(n < 2) 
-    stop("Too few observations.\n")  
-  
-  if(length(T) > 2)
-    stop("The response variable must have 2 levels.\n")
-  else if(length(T) == 1)
-    stop("The response variable has only one class.\n")
-  
-  if(p < 0 || p > 1) 
-    stop("p must be in the interval 0-1.\n")
-  
-  majoY <- levels(response)[which.max(T)]
-  minoY <- levels(response)[which.min(T)]
-  
-  ind.mino <- which(response == minoY)
-  ind.majo <- which(response == majoY)
-  
-  if(!missing(seed)) 
-    set.seed(seed)
-  
-  # Handling the selected method
-  data.obj <- switch(method,
-                     both = ou.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, classy, predictors),
-                     over = over.sampl(n, N, p, ind.majo, ind.mino, majoY, minoY, response, classy, predictors),
-                     under = under.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors),
-                     rose = rose.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors, classx, d, T, hmult.majo, hmult.mino)
-  )
-  
-  data.out <- data.obj$data.out
-  ynew <- data.obj$ynew
-  Xnew <- data.obj$Xnew
-  
-  # Re-positioning columns if necessary
-  if(!missing(data)) {
-    colnames(data.out) <- colnames(data)[colnames(data) %in% colnames(data.out)]
-    data.out <- cbind(ynew, Xnew)
+  if ("response_var" %in% names(args) && "predictor_vars" %in% names(args)) {
+    # New format
+    response_var <- args$response_var
+    predictor_vars <- args$predictor_vars
+    data <- args$data
+    
+    if (missing(method))
+      method <- "both"
+    
+    if ((method == "under" || method == "over") && !missing(N) && !missing(p))
+      stop("Too many arguments. Need to specify either N or p.\n")
+    
+    # Perform the necessary checks and argument parsing
+    response <- data[[response_var]]
+    predictors <- data[, predictor_vars, drop = FALSE]
+    n <- length(response)
+    d <- NCOL(predictors)
+    classy <- class(response)
+    response <- factor(response)
+    T <- table(response)
+    classx <- sapply(as.data.frame(predictors), class)
+    
+    if (n < 2) 
+      stop("Too few observations.\n")
+    
+    if (length(T) > 2)
+      stop("The response variable must have 2 levels.\n")
+    else if (length(T) == 1)
+      stop("The response variable has only one class.\n")
+    
+    if (p < 0 || p > 1) 
+      stop("p must be in the interval 0-1.\n")
+    
+    majoY <- levels(response)[which.max(T)]
+    minoY <- levels(response)[which.min(T)]
+    
+    ind.mino <- which(response == minoY)
+    ind.majo <- which(response == majoY)
+    
+    if (!missing(seed)) 
+      set.seed(seed)
+    
+    # Handling the selected method
+    data.obj <- switch(method,
+                       both = ou.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, classy, predictors),
+                       over = over.sampl(n, N, p, ind.majo, ind.mino, majoY, minoY, response, classy, predictors),
+                       under = under.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors),
+                       rose = rose.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors, classx, d, T, hmult.majo, hmult.mino)
+    )
+    
+    data.out <- data.obj$data.out
+    ynew <- data.obj$ynew
+    Xnew <- data.obj$Xnew
+    
+    # Re-positioning columns if necessary
+    if (!missing(data)) {
+      colnames(data.out) <- colnames(data)[colnames(data) %in% colnames(data.out)]
+      data.out <- cbind(ynew, Xnew)
+    }
+    
+    # TODO: adapt for have the truth names
+    names(data.out) <- names(data)
+    return(list(data = data.out, call = match.call()))
+    
+  } else if ("formula" %in% names(args) && "data" %in% names(args)) {
+    # Old format
+    formula <- args$formula
+    data <- args$data
+    
+    if (missing(method))
+      method <- "both"
+    
+    if ((method == "under" || method == "over") && !missing(N) && !missing(p))
+      stop("Too many arguments. Need to specify either N or p.\n")
+    
+    formula.orig <- formula
+    formula <- adj.formula(formula, data)
+    
+    if (missing(subset))
+      subset <- options("subset")$subset
+    if (missing(na.action))
+      na.action <- options("na.action")$na.action
+    
+    flg.data <- 0
+    if (!missing(data)) {
+      lst.model.frame <- list(formula = formula, data = data, subset = subset, na.action = na.action)
+      
+      if (is.environment(data)) 
+        flg.data <- 2
+      else
+        flg.data <- 1
+    } else {
+      lst.model.frame <- list(formula = formula, data = NULL, subset = subset, na.action = na.action)
+    }
+    
+    if (formula.orig[[3]] != "." && eval(formula) != formula.orig)
+      warning("Transformations of variables are not allowed.\n New data have been generated by using non-transformed variables.\n ")
+    
+    mf <- do.call(model.frame, lst.model.frame)
+    cn <- rownames(attributes(attributes(mf)$terms)$factors)
+    data.st <- data.frame(mf)
+    y <- data.st[, 1]
+    X <- data.frame(data.st[, -1])
+    
+    n <- length(y)
+    d <- NCOL(X)
+    
+    classy <- class(y)
+    y <- factor(y)
+    T <- table(y)
+    classx <- sapply(as.data.frame(X), class)
+    
+    if (n < 2) 
+      stop("Too few observations.\n")
+    
+    if (length(T) > 2)
+      stop("The response variable must have 2 levels.\n")
+    else if (length(T) == 1)
+      stop("The response variable has only one class.\n")
+    
+    if (p < 0 || p > 1) 
+      stop("p must be in the interval 0-1.\n")
+    
+    majoY <- levels(y)[which.max(T)]
+    minoY <- levels(y)[which.min(T)]
+    
+    ind.mino <- which(y == minoY)
+    ind.majo <- which(y == majoY)
+    
+    if (!missing(seed)) 
+      set.seed(seed)
+    
+    data.obj <- switch(method,
+                       both = ou.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, classy, X),
+                       over = over.sampl(n, N, p, ind.majo, ind.mino, majoY, minoY, y, classy, X),
+                       under = under.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, y, classy, X),
+                       rose = rose.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, y, classy, X, classx, d, T, hmult.majo, hmult.mino)
+    )
+    
+    data.out <- data.obj$data.out
+    ynew <- data.obj$ynew
+    Xnew <- data.obj$Xnew
+    
+    # Re-positioning columns if necessary
+    if (!missing(data) & flg.data != 0) {
+      if (flg.data == 1)
+        colnames(data.out) <- colnames(data)[colnames(data) %in% cn]
+      else
+        colnames(data.out) <- attr(formula, "variables")[attr(formula, "variables") %in% cn] 
+      
+      indY <- colnames(data.out) == cn[1]
+      data.out[, indY] <- ynew
+      
+      swap.col <- order(pmatch(cn[-1], colnames(data.out)[!indY]))
+      data.out[, !indY] <- Xnew[, (1:d)[swap.col]]
+    } else {
+      if (length(cn) - 1 < d)
+        colnames(data.out) <- c(cn[1], colnames(X))
+      else
+        colnames(data.out) <- cn
+    }
+    
+    return(list(data = data.out, call = match.call()))
+  } else {
+    stop("Invalid arguments.")
   }
-  
-  # TODO: adapt for have the truth names
-  names(data.out) <- names(data)
-  list(data = data.out, call = match.call())
 }
+
 
 ######################################################################
 #Combination of over and under sampling
