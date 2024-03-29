@@ -126,14 +126,16 @@ adj.formula <- function(formula, data)
 #This function is the wrapper for all the implemented data balancing remedies 
 ######################################################################
 ##this function is NOT exported
-omnibus.balancing <- function(..., method, subset, na.action, N, p = 0.5, seed, hmult.majo = 1, hmult.mino = 1) {
-  args <- list(...)
+omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL, data, method, subset, na.action, N, p = 0.5, seed, hmult.majo = 1, hmult.mino = 1) {
   
-  if ("response_var" %in% names(args) && "predictor_vars" %in% names(args)) {
+  if (!is.null(Formula) && (!is.null(response) || !is.null(predictors))) {
+    stop("Cannot provide both Formula and response/predictors simultaneously.\n")
+  }
+  
+  if (!is.null(response) && !is.null(predictors)) {
     # New format
-    response_var <- args$response_var
-    predictor_vars <- args$predictor_vars
-    data <- args$data
+    response_var <- response
+    predictor_vars <- predictors
     
     if (missing(method))
       method <- "both"
@@ -193,10 +195,10 @@ omnibus.balancing <- function(..., method, subset, na.action, N, p = 0.5, seed, 
     names(data.out) <- names(data)
     return(list(data = data.out, call = match.call()))
     
-  } else if ("formula" %in% names(args) && "data" %in% names(args)) {
+  } else if (!is.null(Formula) && !is.null(data)) {
     # Old format
-    formula <- args$formula
-    data <- args$data
+    formula <- Formula
+    data <- data
     
     if (missing(method))
       method <- "both"
