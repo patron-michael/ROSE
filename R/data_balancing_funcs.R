@@ -16,7 +16,6 @@ ovun.sample <- function(Formula = NULL, response = NULL, predictors = NULL, data
   }
   
   if (!is.null(Formula)) {
-    # Old format
     formula <- Formula
     
     method <- match.arg(method, choices = c("both", "over", "under"))
@@ -32,7 +31,6 @@ ovun.sample <- function(Formula = NULL, response = NULL, predictors = NULL, data
     class(out) <- "ovun.sample"
     return(out)
   } else if (!is.null(response) && !is.null(predictors)) {
-    # New format
     response_var <- response
     predictor_vars <- predictors
     
@@ -165,7 +163,7 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     levels_response <- levels(response)
     
     ind_list <- lapply(levels_response, function(level) which(response == level))
-    sample_sizes <- lapply(ind_list, length)
+    sample_sizes <- sapply(ind_list, length)
     max_sample_size <- max(sample_sizes)
     
     if (!missing(seed)) 
