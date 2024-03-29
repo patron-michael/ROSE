@@ -8,7 +8,7 @@
 ######################################################################
 #ovun.sample main function
 ######################################################################
-ovun.sample <- function(Formula = NULL, response = NULL, predictors = NULL, data, method = "both", N, p = 0.5, subset = options("subset")$subset, na.action = options("na.action")$na.action, seed) 
+ovun.sample <- function(Formula = NULL, response = NULL, predictors = NULL, data, method = "both", N=NULL, p = 0.5, subset = options("subset")$subset, na.action = options("na.action")$na.action, seed) 
 {
   
   if (!is.null(Formula) && (!is.null(response) || !is.null(predictors))) {
@@ -124,7 +124,7 @@ adj.formula <- function(formula, data)
 #This function is the wrapper for all the implemented data balancing remedies 
 ######################################################################
 ##this function is NOT exported
-omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL, data, method, subset, na.action, N, p = 0.5, seed, hmult.majo = 1, hmult.mino = 1) {
+omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL, data, method, subset, na.action, N=NULL, p = 0.5, seed, hmult.majo = 1, hmult.mino = 1) {
 
   if (!is.null(Formula) && (!is.null(response) || !is.null(predictors))) {
     stop("Cannot provide both Formula and response/predictors simultaneously.\n")
@@ -173,14 +173,18 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     if (!missing(seed)) 
       set.seed(seed)
     
-    # Handling the selected method for each class
     data.obj_list <- lapply(seq_along(ind_list), function(i) {
       data_subset <- data[ind_list[[i]], , drop = FALSE]
+      majoY <- levels_response[-i][which.max(sample_sizes[-i])]  # Excluding the current level
+      minoY <- levels_response[i]
+      ind.majo <- which(response == majoY)
+      ind.mino <- ind_list[[i]]
+      
       switch(method,
-             both = ou.sampl(n = sample_sizes[i], N = N,p =  p,ind.majo =  NULL,majoY =  NULL,ind.mino =  NULL,minoY =  NULL, classy = classy,X =  predictors),
-             over = over.sampl(n = sample_sizes[i],N =  N,p =  p,ind.majo =  NULL,ind.mino =  NULL,majoY =  NULL, minoY = NULL,y =  response[ind_list[[i]]], classy = classy,X =  predictors),
-             under = under.sampl(n = sample_sizes[i],N =  N, p = p, ind.majo = NULL, majoY = NULL, ind.mino = NULL, minoY = NULL, y = response[ind_list[[i]]], classy = classy, X = predictors),
-             rose = rose.sampl(n = sample_sizes[i], N = N, p = p, ind.majo = NULL, majoY = NULL, ind.mino = NULL, minoY = NULL, y = response[ind_list[[i]]], classy = classy, X = predictors, classx = classx, d = d, T = T, hmult.majo = hmult.majo, hmult.mino = hmult.mino)
+             both = ou.sampl(sample_sizes[i], N, p, ind.majo, majoY, ind.mino, minoY, classy, predictors),
+             over = over.sampl(sample_sizes[i], N, p, ind.majo, ind.mino, majoY, minoY, response, classy, predictors),
+             under = under.sampl(sample_sizes[i], N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors),
+             rose = rose.sampl(sample_sizes[i], N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors, classx, d, T, hmult.majo, hmult.mino)
       )
     })
     
@@ -273,15 +277,24 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     # Handling the selected method for each class
     data.obj_list <- lapply(seq_along(ind_list), function(i) {
       data_subset <- data[ind_list[[i]], , drop = FALSE]
+      majoY <- levels_response[-i][which.max(sample_sizes[-i])]  # Excluding the current level
+      minoY <- levels_response[i]
+      print(response)
+      print(majoY)
+      ind.majo <- which(response == majoY)
+      ind.mino <- ind_list[[i]]
       print("ko")
+      print(ind.majo)
       switch(method,
-             both = ou.sampl(sample_sizes[i], N, p, NULL, NULL, NULL, NULL, classy, X),
-             over = over.sampl(sample_sizes[i], N, p, NULL, NULL, NULL, NULL, y[ind_list[[i]]], classy, X),
-             under = under.sampl(sample_sizes[i], N, p, NULL, NULL, NULL, NULL, y[ind_list[[i]]], classy, X),
-             rose = rose.sampl(sample_sizes[i], N, p, NULL, NULL, NULL, NULL, y[ind_list[[i]]], classy, X, classx, d, T, hmult.majo, hmult.mino)
+             both = ou.sampl(sample_sizes[i], N, p, ind.majo, majoY, ind.mino, minoY, classy, predictors),
+             over = over.sampl(sample_sizes[i], N, p, ind.majo, ind.mino, majoY, minoY, response, classy, predictors),
+             under = under.sampl(sample_sizes[i], N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors),
+             rose = rose.sampl(sample_sizes[i], N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors, classx, d, T, hmult.majo, hmult.mino)
       )
     })
   
+    
+    print("echo")
     
     data.out_list <- lapply(data.obj_list, function(data.obj) data.obj$data.out)
     ynew_list <- lapply(data.obj_list, function(data.obj) data.obj$ynew)
@@ -327,7 +340,7 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
 ou.sampl <- function(n, N, p, ind.majo, majoY, ind.mino, minoY, classy, X)
 {
   print("koko")
-		if( missing(N) )
+		if( is.null(N) )
 			N <- n
 	#number of new minority class examples
 	n.mino.new <- sum(rbinom(N, 1, p))
@@ -360,7 +373,7 @@ under.sampl <- function(n, N, p, ind.majo, majoY, ind.mino, minoY, y, classy, X)
 
 	n.mino.new <- sum(y == minoY)
 
-		if( missing(N) )
+		if( is.null(N) )
 		{
 				# Determination of N and n.majo in version 0.0.2
 				if( p<n.mino.new/n ) 
@@ -407,7 +420,7 @@ over.sampl <- function(n, N, p, ind.majo, ind.mino, majoY, minoY, y, classy, X)
 	n.majo <- n.majo.new <- sum(y == majoY)
 	n.mino <- n-n.majo
 
-		if( missing(N) )
+		if( is.null(N) )
 		{
 				if( p<n.mino/n ) 
 					warning("non-sensible to specify p smaller than the actual proportion of minority class examples in the original sample.\n")
@@ -456,16 +469,20 @@ rose.sampl <- function(n, N, p, ind.majo, majoY, ind.mino, minoY, y, classy, X, 
 		if( any(T < 2) ) 
 			stop("ROSE needs at least two majority and two minority class examples.\n")
 
-		if( missing(N) )
+		if( is.null(N) )
 			N <- n
+
 	#number of new minority class examples
 	n.mino.new <- sum(rbinom(N, 1, p))
 	#number of new majority class examples
 	n.majo.new <- N-n.mino.new
 
+	print("rose-1")
+	print(ind.majo)
+	print(n.majo.new)
 	id.majo.new <- sample(ind.majo, n.majo.new, replace=TRUE)
 	id.mino.new <- sample(ind.mino, n.mino.new, replace=TRUE)
-
+	print("rose+1")
 
 	id.num  <- which(classx=="numeric" | classx=="integer")
 	d.num   <- d-length( which(classx=="factor") )
@@ -514,7 +531,7 @@ rose.real <- function(X, hmult=1, n, q = NCOL(X), ids.class, ids.generation)
 ######################################################################
 #Wrapper for ROSE
 ######################################################################
-ROSE <- function(response_var = NULL, predictor_vars = NULL, data = NULL, Formula = NULL, N, p = 0.5, hmult.majo = 1, hmult.mino = 1, subset = options("subset")$subset, na.action = options("na.action")$na.action, seed) {
+ROSE <- function(response_var = NULL, predictor_vars = NULL, data = NULL, Formula = NULL, N=NULL, p = 0.5, hmult.majo = 1, hmult.mino = 1, subset = options("subset")$subset, na.action = options("na.action")$na.action, seed) {
   mc <- match.call()
   if (!is.null(Formula)) {
     obj <- omnibus.balancing(Formula = Formula, data = data, subset = subset, na.action =  na.action, N =  N, p =  p, method = "rose", seed =  seed, hmult.majo =  hmult.majo, hmult.mino =  hmult.mino)
