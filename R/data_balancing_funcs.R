@@ -276,6 +276,40 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
       )
     })
     
+    data.out_list <- lapply(data.obj_list, function(data.obj) data.obj$data.out)
+    ynew_list <- lapply(data.obj_list, function(data.obj) data.obj$ynew)
+    Xnew_list <- lapply(data.obj_list, function(data.obj) data.obj$Xnew)
+    
+    # Combine the results for all classes
+    data.out <- do.call(rbind, data.out_list)
+    ynew <- unlist(ynew_list)
+    Xnew <- do.call(rbind, Xnew_list)
+    
+    # Re-positioning columns if necessary
+    if (!missing(data) & flg.data != 0) {
+      if (flg.data == 1)
+        colnames(data.out) <- colnames(data)[colnames(data) %in% cn]
+      else
+        colnames(data.out) <- attr(formula, "variables")[attr(formula, "variables") %in% cn] 
+      
+      indY <- colnames(data.out) == cn[1]
+      data.out[, indY] <- ynew
+      
+      swap.col <- order(pmatch(cn[-1], colnames(data.out)[!indY]))
+      data.out[, !indY] <- Xnew[, (1:d)[swap.col]]
+    } else {
+      if (length(cn) - 1 < d)
+        colnames(data.out) <- c(cn[1], colnames(X))
+      else
+        colnames(data.out) <- cn
+    }
+    
+    return(list(data = data.out, call = match.call()))
+  } else {
+    stop("Invalid arguments.")
+  }
+}
+    
 
 
 
