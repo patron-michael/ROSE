@@ -41,7 +41,7 @@ ovun.sample <- function(..., method = "both", N, p = 0.5, subset = options("subs
     Call <- match.call()
     m <- match(c("response_var", "predictor_vars", "data", "method", "N", "p", "seed", "subset", "na.action"), names(Call), 0L)
     Call1 <- Call[c(1L, m)]
-    Call1[[1L]] <- new.omnibus.balancing
+    Call1[[1L]] <- omnibus.balancing
     res <- eval(Call1)
     out <- list(Call = match.call(), method = method, data = res$data)
     class(out) <- "ovun.sample"
@@ -493,7 +493,7 @@ rose.real <- function(X, hmult=1, n, q = NCOL(X), ids.class, ids.generation)
 ROSE <- function(response_var, predictor_vars, data, N, p=0.5, hmult.majo=1, hmult.mino=1, subset=options("subset")$subset, na.action=options("na.action")$na.action, seed)
 {
   mc <- match.call()
-  obj <- new.omnibus.balancing(response_var, predictor_vars, data, subset, na.action, N, p, method="rose", seed, hmult.majo, hmult.mino)
+  obj <- omnibus.balancing(response_var, predictor_vars, data, subset, na.action, N, p, method="rose", seed, hmult.majo, hmult.mino)
   # out <- list(Call=mc, method="ROSE", data=obj$data)
   # class(out) <- "ROSE"
   # out
