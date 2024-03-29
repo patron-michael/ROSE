@@ -163,26 +163,33 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
       stop("p must be in the interval 0-1.\n")
     
     levels_response <- levels(response)
-    majoY <- levels_response[which.max(T)]
-    minoY <- levels_response[which.min(T)]
     
-    ind.mino <- which(response == minoY)
-    ind.majo <- which(response == majoY)
+    ind_list <- lapply(levels_response, function(level) which(response == level))
+    sample_sizes <- lapply(ind_list, length)
+    max_sample_size <- max(sample_sizes)
     
     if (!missing(seed)) 
       set.seed(seed)
     
-    # Handling the selected method
-    data.obj <- switch(method,
-                       both = ou.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, classy, predictors),
-                       over = over.sampl(n, N, p, ind.majo, ind.mino, majoY, minoY, response, classy, predictors),
-                       under = under.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors),
-                       rose = rose.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, response, classy, predictors, classx, d, T, hmult.majo, hmult.mino)
-    )
+    # Handling the selected method for each class
+    data.obj_list <- lapply(seq_along(ind_list), function(i) {
+      data_subset <- data[ind_list[[i]], , drop = FALSE]
+      switch(method,
+             both = ou.sampl(sample_sizes[[i]], N, p, NULL, NULL, NULL, NULL, classy, predictors),
+             over = over.sampl(sample_sizes[[i]], N, p, NULL, NULL, NULL, NULL, response[ind_list[[i]]], classy, predictors),
+             under = under.sampl(sample_sizes[[i]], N, p, NULL, NULL, NULL, NULL, response[ind_list[[i]]], classy, predictors),
+             rose = rose.sampl(sample_sizes[[i]], N, p, NULL, NULL, NULL, NULL, response[ind_list[[i]]], classy, predictors, classx, d, T, hmult.majo, hmult.mino)
+      )
+    })
     
-    data.out <- data.obj$data.out
-    ynew <- data.obj$ynew
-    Xnew <- data.obj$Xnew
+    data.out_list <- lapply(data.obj_list, function(data.obj) data.obj$data.out)
+    ynew_list <- lapply(data.obj_list, function(data.obj) data.obj$ynew)
+    Xnew_list <- lapply(data.obj_list, function(data.obj) data.obj$Xnew)
+    
+    # Combine the results for all classes
+    data.out <- do.call(rbind, data.out_list)
+    ynew <- unlist(ynew_list)
+    Xnew <- do.call(rbind, Xnew_list)
     
     # Re-positioning columns if necessary
     if (!missing(data)) {
@@ -252,25 +259,33 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
       stop("p must be in the interval 0-1.\n")
     
     levels_response <- levels(y)
-    majoY <- levels_response[which.max(T)]
-    minoY <- levels_response[which.min(T)]
     
-    ind.mino <- which(y == minoY)
-    ind.majo <- which(y == majoY)
+    ind_list <- lapply(levels_response, function(level) which(y == level))
+    sample_sizes <- lapply(ind_list, length)
+    max_sample_size <- max(sample_sizes)
     
     if (!missing(seed)) 
       set.seed(seed)
     
-    data.obj <- switch(method,
-                       both = ou.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, classy, X),
-                       over = over.sampl(n, N, p, ind.majo, ind.mino, majoY, minoY, y, classy, X),
-                       under = under.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, y, classy, X),
-                       rose = rose.sampl(n, N, p, ind.majo, majoY, ind.mino, minoY, y, classy, X, classx, d, T, hmult.majo, hmult.mino)
-    )
+    # Handling the selected method for each class
+    data.obj_list <- lapply(seq_along(ind_list), function(i) {
+      data_subset <- data[ind_list[[i]], , drop = FALSE]
+      switch(method,
+             both = ou.sampl(sample_sizes[[i]], N, p, NULL, NULL, NULL, NULL, classy, X),
+             over = over.sampl(sample_sizes[[i]], N, p, NULL, NULL, NULL, NULL, y[ind_list[[i]]], classy, X),
+             under = under.sampl(sample_sizes[[i]], N, p, NULL, NULL, NULL, NULL, y[ind_list[[i]]], classy, X),
+             rose = rose.sampl(sample_sizes[[i]], N, p, NULL, NULL, NULL, NULL, y[ind_list[[i]]], classy, X, classx, d, T, hmult.majo, hmult.mino)
+      )
+    })
     
-    data.out <- data.obj$data.out
-    ynew <- data.obj$ynew
-    Xnew <- data.obj$Xnew
+    data.out_list <- lapply(data.obj_list, function(data.obj) data.obj$data.out)
+    ynew_list <- lapply(data.obj_list, function(data.obj) data.obj$ynew)
+    Xnew_list <- lapply(data.obj_list, function(data.obj) data.obj$Xnew)
+    
+    # Combine the results for all classes
+    data.out <- do.call(rbind, data.out_list)
+    ynew <- unlist(ynew_list)
+    Xnew <- do.call(rbind, Xnew_list)
     
     # Re-positioning columns if necessary
     if (!missing(data) & flg.data != 0) {
@@ -296,6 +311,7 @@ omnibus.balancing <- function(Formula = NULL, response = NULL, predictors = NULL
     stop("Invalid arguments.")
   }
 }
+
 
 
 ######################################################################
