@@ -2,6 +2,7 @@
 # Install development branch
 #remotes::install_github("patron-michael/ROSE@dev_merge")
 #detach("package:ROSE", unload = TRUE)
+#remove.packages("ROSE")
 library(ROSE)
 data(hacide)
 
@@ -11,7 +12,7 @@ library(rmarkdown)
 
 ## Initial implementation
 
-```{r standart workflow, prompt=FALSE, echo=FALSE}
+```{r standart init workflow, prompt=FALSE, echo=FALSE}
 # unbalance on training set
 table(hacide.train$cls)
 #unbalance on test set
@@ -32,7 +33,7 @@ roc.curve(hacide.test$cls, pred,
           main="ROC curve \n (Half circle depleted data)")
 
 # generating data according to ROSE: p=0.5 as default
-data.rose <- ROSE(formula =  cls~., data=hacide.train, seed=3)$data
+data.rose <- ROSE(Formula = cls~., data=hacide.train, seed=3)$data
 table(data.rose$cls)
 
 par(mfrow=c(1,2))
@@ -52,7 +53,7 @@ par(mfrow=c(1,1))
 
 ## Second implementation
 
-```{r standart workflow, prompt=FALSE, echo=FALSE}
+```{r standart new workflow, prompt=FALSE, echo=FALSE}
 # unbalance on training set
 table(hacide.train$cls)
 #unbalance on test set
@@ -97,9 +98,9 @@ roc.curve(data.rose$cls, pred.rose,
 par(mfrow=c(1,1))
 
 ```
-## Specifique unbalance class
+## Specifique unbalance class initial implementation
 
-```{r sepcific example train data, prompt=FALSE, echo=FALSE}
+```{r sepcific example train data init, prompt=FALSE, echo=FALSE}
 library("tidyverse")
 table(hacide.train$cls)
 
@@ -113,7 +114,74 @@ ggplot(multiclass_balance_init_train, aes(x=cls, y=prop, fill=n)) +
 paged_table(multiclass_balance_init_train)
 ```
 
-```{r sepcific example test data, prompt=FALSE, echo=FALSE}
+```{r sepcific example test data init, prompt=FALSE, echo=FALSE}
+#unbalance on test set
+table(hacide.test$cls)
+
+multiclass_balance_init_test <- hacide.test %>%
+    count(cls) %>%
+    mutate(prop = n/sum(n))
+
+ggplot(multiclass_balance_init_test, aes(x=cls, y=prop, fill=n)) +
+  geom_bar(stat="identity") + ggtitle(label="unbalance test") + scale_fill_continuous(name = "number of elements")
+
+paged_table(multiclass_balance_init_test)
+```
+
+```r
+resampling_train <- ovun.sample(Formula = cls~., data=hacide.train, method = "both")
+```
+
+```{r resampling train data init, prompt=FALSE, echo=FALSE}
+
+resampling_train <- ovun.sample(Formula = cls~., data=hacide.train, method = "both")
+
+multiclass_balance_train <- resampling_train$data %>%
+    count(cls) %>%
+    mutate(prop = n/sum(n))
+
+ggplot(multiclass_balance_train, aes(x=cls, y=prop, fill=n)) +
+  geom_bar(stat="identity") + ggtitle(label="unbalance train") + scale_fill_continuous(name = "number of elements")
+
+paged_table(multiclass_balance_train)
+```
+
+```r
+resampling_test <- ovun.sample(Formula = cls~., data=hacide.test, method = "both")
+```
+
+
+```{r resampling test data init, prompt=FALSE, echo=FALSE}
+
+resampling_test <- ovun.sample(Formula = cls~., data=hacide.test, method = "both")
+
+multiclass_balance_test <- resampling_test$data %>%
+    count(cls) %>%
+    mutate(prop = n/sum(n))
+
+ggplot(multiclass_balance_test, aes(x=cls, y=prop, fill=n)) +
+  geom_bar(stat="identity") + ggtitle(label="unbalance test") + scale_fill_continuous(name = "number of elements")
+
+paged_table(multiclass_balance_test)
+```
+
+## Specifique unbalance class second implementation
+
+```{r sepcific example train data second, prompt=FALSE, echo=FALSE}
+library("tidyverse")
+table(hacide.train$cls)
+
+multiclass_balance_init_train <- hacide.train %>%
+    count(cls) %>%
+    mutate(prop = n/sum(n))
+
+ggplot(multiclass_balance_init_train, aes(x=cls, y=prop, fill=n)) +
+  geom_bar(stat="identity") + ggtitle(label="unbalance train") + scale_fill_continuous(name = "number of elements")
+
+paged_table(multiclass_balance_init_train)
+```
+
+```{r sepcific example test data second, prompt=FALSE, echo=FALSE}
 #unbalance on test set
 table(hacide.test$cls)
 
@@ -131,15 +199,15 @@ paged_table(multiclass_balance_init_test)
 predictor_vars_train <- names(hacide.train[, !colnames(hacide.train) %in% c("cls")])
 response_var_train <- names(hacide.train["cls"])
 
-resampling_train <- new.ovun.sample(response_var =response_var_train ,predictor_vars =predictor_vars_train ,data=hacide.train, method = "both")
+resampling_train <- ovun.sample(response = response_var_train , predictors = predictor_vars_train, data=hacide.train, method = "both")
 ```
 
-```{r resampling train data, prompt=FALSE, echo=FALSE}
+```{r resampling train data second, prompt=FALSE, echo=FALSE}
 
 predictor_vars_train <- names(hacide.train[, !colnames(hacide.train) %in% c("cls")])
 response_var_train <- names(hacide.train["cls"])
 
-resampling_train <- new.ovun.sample(response_var =response_var_train ,predictor_vars =predictor_vars_train ,data=hacide.train, method = "both")
+resampling_train <- ovun.sample(response = response_var_train , predictors = predictor_vars_train, data=hacide.train, method = "both")
 
 multiclass_balance_train <- resampling_train$data %>%
     count(cls) %>%
@@ -155,15 +223,15 @@ paged_table(multiclass_balance_train)
 predictor_vars_test <- names(hacide.train[, !colnames(hacide.test) %in% c("cls")])
 response_var_test <- names(hacide.test["cls"])
 
-resampling_test <- new.ovun.sample(response_var =response_var_test ,predictor_vars =predictor_vars_test ,data=hacide.test, method = "both")
+resampling_test <- ovun.sample(response = response_var_test, predictors = predictor_vars_test, data=hacide.test, method = "both")
 ```
 
 
-```{r resampling test data, prompt=FALSE, echo=FALSE}
+```{r resampling test data second, prompt=FALSE, echo=FALSE}
 predictor_vars_test <- names(hacide.train[, !colnames(hacide.test) %in% c("cls")])
 response_var_test <- names(hacide.test["cls"])
 
-resampling_test <- new.ovun.sample(response_var =response_var_test ,predictor_vars =predictor_vars_test ,data=hacide.test, method = "both")
+resampling_test <- ovun.sample(response = response_var_test, predictors = predictor_vars_test, data=hacide.test, method = "both")
 
 multiclass_balance_test <- resampling_test$data %>%
     count(cls) %>%
